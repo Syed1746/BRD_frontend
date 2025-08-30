@@ -18,7 +18,7 @@ export default function Invoice() {
   const token = localStorage.getItem("token");
 
   // ✅ Base URL for Render backend
-  const BASE_URL = "https://brd-backend-o7n9.onrender.com/api/invoice";
+  const BASE_URL = "https://brd-backend-o7n9.onrender.com/api/invoices";
 
   const axiosConfig = {
     headers: {

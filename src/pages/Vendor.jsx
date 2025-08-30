@@ -27,7 +27,7 @@ export default function Vendor() {
   // Fetch all vendors
   const fetchVendors = async () => {
     try {
-      const res = await axios.get(`${BASE_URL}/api/vendor`, axiosConfig);
+      const res = await axios.get(`${BASE_URL}/api/vendors`, axiosConfig);
       setVendors(res.data.vendors);
     } catch (err) {
       console.error(err);

@@ -46,7 +46,7 @@ export default function Timesheet() {
         setMessage("Timesheet updated successfully");
         setEditingId(null);
       } else {
-        await axios.post(`${BASE_URL}/timesheet`, formData);
+        await axios.post(`${BASE_URL}/timesheets`, formData);
         setMessage("Timesheet added successfully");
       }
       setFormData({

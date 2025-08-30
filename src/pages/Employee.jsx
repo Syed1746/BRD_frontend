@@ -26,7 +26,7 @@ export default function EmployeePage() {
   const fetchEmployees = async () => {
     try {
       const token = localStorage.getItem("token"); // after login, save token
-      const res = await axios.get(`${BASE_URL}/api/employee`, {
+      const res = await axios.get(`${BASE_URL}/api/employees`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

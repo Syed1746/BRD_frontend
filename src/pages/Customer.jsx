@@ -27,7 +27,7 @@ export default function Customer() {
 
   const fetchCustomers = async () => {
     try {
-      const res = await axios.get(`${BASE_URL}/api/customer`, config);
+      const res = await axios.get(`${BASE_URL}/api/customers`, config);
       // ✅ ensure fallback array
       setCustomers(res.data.customers || []);
     } catch (err) {
