@@ -16,7 +16,7 @@ export default function EmployeePage() {
     date_of_joining: "",
     department: "",
     designation: "",
-    status: "Active",
+    active: "Active", // ✅ match backend field
   });
   const [editId, setEditId] = useState(null);
 
@@ -25,13 +25,14 @@ export default function EmployeePage() {
   // Fetch Employees
   const fetchEmployees = async () => {
     try {
-      const token = localStorage.getItem("token"); // after login, save token
+      const token = localStorage.getItem("token");
       const res = await axios.get(`${BASE_URL}/api/employees`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
-      setEmployees(res.data.GetEmployee || []);
+      // ✅ API returns array directly
+      setEmployees(res.data || []);
     } catch (err) {
       console.error(
         "Failed to fetch employees:",
@@ -52,15 +53,11 @@ export default function EmployeePage() {
 
       if (editId) {
         await axios.put(`${BASE_URL}/api/employee/${editId}`, formData, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
       } else {
         await axios.post(`${BASE_URL}/api/employee`, formData, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
       }
 
@@ -86,7 +83,7 @@ export default function EmployeePage() {
       date_of_joining: "",
       department: "",
       designation: "",
-      status: "Active",
+      active: "Active",
     });
     setEditId(null);
   };
@@ -102,7 +99,7 @@ export default function EmployeePage() {
       date_of_joining: emp.date_of_joining?.substring(0, 10),
       department: emp.department,
       designation: emp.designation,
-      status: emp.active || "Active",
+      active: emp.active || "Active", // ✅ fixed
     });
     setEditId(emp._id);
     setIsOpen(true);
@@ -194,7 +191,7 @@ export default function EmployeePage() {
                 "date_of_joining",
                 "department",
                 "designation",
-                "status",
+                "active", // ✅ field matches backend
               ].map((field) => (
                 <input
                   key={field}
