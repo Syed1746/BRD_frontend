@@ -1,4 +1,3 @@
-// src/pages/Timesheet.jsx
 import { useState, useEffect } from "react";
 import axios from "axios";
 
@@ -15,12 +14,15 @@ export default function Timesheet() {
   const [editingId, setEditingId] = useState(null);
   const [message, setMessage] = useState("");
 
+  const BASE_URL = "https://brd-backend-o7n9.onrender.com/api";
+
+  // Fetch all timesheets
   const fetchTimesheets = async () => {
     try {
-      const res = await axios.get("http://localhost:3000/api/timesheet");
-      setTimesheets(res.data.timesheets);
+      const res = await axios.get(`${BASE_URL}/timesheet`);
+      setTimesheets(res.data.timesheets || []);
     } catch (err) {
-      console.error(err);
+      console.error("Error fetching timesheets:", err);
     }
   };
 
@@ -28,24 +30,23 @@ export default function Timesheet() {
     fetchTimesheets();
   }, []);
 
+  // Handle input change
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  // Handle add/update timesheet
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setMessage("");
     try {
       if (editingId) {
-        await axios.put(
-          `http://localhost:3000/api/timesheet/${editingId}`,
-          formData
-        );
+        await axios.put(`${BASE_URL}/timesheet/${editingId}`, formData);
         setMessage("Timesheet updated successfully");
         setEditingId(null);
       } else {
-        await axios.post("http://localhost:3000/api/timesheet", formData);
+        await axios.post(`${BASE_URL}/timesheet`, formData);
         setMessage("Timesheet added successfully");
       }
       setFormData({
@@ -57,12 +58,14 @@ export default function Timesheet() {
       });
       fetchTimesheets();
     } catch (err) {
+      console.error("Error saving timesheet:", err);
       setMessage(err.response?.data?.error || "Error saving timesheet");
     } finally {
       setLoading(false);
     }
   };
 
+  // Handle editing timesheet
   const handleEdit = (ts) => {
     setEditingId(ts._id);
     setFormData({
@@ -88,6 +91,7 @@ export default function Timesheet() {
           </p>
         )}
 
+        {/* Timesheet Form */}
         <form
           onSubmit={handleSubmit}
           className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"
@@ -147,6 +151,7 @@ export default function Timesheet() {
           </button>
         </form>
 
+        {/* Timesheet Records */}
         <h3 className="text-xl font-semibold mb-4">Timesheet Records</h3>
         <div className="overflow-x-auto">
           <table className="w-full table-auto border-collapse border border-gray-300">

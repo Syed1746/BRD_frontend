@@ -20,11 +20,13 @@ export default function EmployeePage() {
   });
   const [editId, setEditId] = useState(null);
 
-  // ✅ fetchEmployees with auth token
+  const BASE_URL = "https://brd-backend-o7n9.onrender.com"; // ✅ Deployed backend URL
+
+  // Fetch Employees
   const fetchEmployees = async () => {
     try {
       const token = localStorage.getItem("token"); // after login, save token
-      const res = await axios.get("http://localhost:3000/api/employee", {
+      const res = await axios.get(`${BASE_URL}/api/employee`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -42,27 +44,20 @@ export default function EmployeePage() {
     fetchEmployees();
   }, []);
 
-  // ✅ Handle Add/Update
-  // ✅ Handle Add/Update
+  // Handle Add/Update
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem("token"); // get token from localStorage
+      const token = localStorage.getItem("token");
 
       if (editId) {
-        // Update employee
-        await axios.put(
-          `http://localhost:3000/api/employee/${editId}`,
-          formData,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        await axios.put(`${BASE_URL}/api/employee/${editId}`, formData, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
       } else {
-        // Add new employee
-        await axios.post("http://localhost:3000/api/employee", formData, {
+        await axios.post(`${BASE_URL}/api/employee`, formData, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -96,7 +91,6 @@ export default function EmployeePage() {
     setEditId(null);
   };
 
-  // ✅ Open modal for edit
   const handleEdit = (emp) => {
     setFormData({
       employee_code: emp.employee_code,
@@ -104,7 +98,7 @@ export default function EmployeePage() {
       last_name: emp.last_name,
       email: emp.email,
       phone_number: emp.phone_number,
-      date_of_birth: emp.date_of_birth?.substring(0, 10), // format YYYY-MM-DD
+      date_of_birth: emp.date_of_birth?.substring(0, 10),
       date_of_joining: emp.date_of_joining?.substring(0, 10),
       department: emp.department,
       designation: emp.designation,
@@ -126,7 +120,6 @@ export default function EmployeePage() {
         </button>
       </div>
 
-      {/* Search */}
       <input
         type="text"
         placeholder="Search by name..."
@@ -135,7 +128,6 @@ export default function EmployeePage() {
         onChange={(e) => setSearch(e.target.value)}
       />
 
-      {/* Employee Table */}
       <table className="w-full border rounded shadow">
         <thead className="bg-gray-100">
           <tr>
@@ -180,7 +172,6 @@ export default function EmployeePage() {
         </tbody>
       </table>
 
-      {/* Add/Edit Modal */}
       <Dialog
         open={isOpen}
         onClose={() => setIsOpen(false)}

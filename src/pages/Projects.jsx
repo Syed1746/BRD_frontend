@@ -1,6 +1,6 @@
 // src/pages/Projects.jsx
 import { useState, useEffect } from "react";
-import axiosInstance from "../utils/axiosInstance";
+import axios from "axios";
 
 export default function Projects() {
   const [projects, setProjects] = useState([]);
@@ -16,10 +16,21 @@ export default function Projects() {
   const [editingId, setEditingId] = useState(null);
   const [message, setMessage] = useState("");
 
+  const token = localStorage.getItem("token");
+
+  const axiosConfig = {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  };
+
+  // ✅ Change this to your backend base URL
+  const BASE_URL = "https://brd-backend-o7n9.onrender.com/api/projects";
+
   // Fetch projects from API
   const fetchProjects = async () => {
     try {
-      const res = await axiosInstance.get("/projects");
+      const res = await axios.get(BASE_URL, axiosConfig);
       setProjects(res.data.projects);
     } catch (err) {
       console.error(err);
@@ -43,11 +54,11 @@ export default function Projects() {
     setMessage("");
     try {
       if (editingId) {
-        await axiosInstance.put(`/projects/${editingId}`, formData);
+        await axios.put(`${BASE_URL}/${editingId}`, formData, axiosConfig);
         setMessage("Project updated successfully");
         setEditingId(null);
       } else {
-        await axiosInstance.post("/projects", formData);
+        await axios.post(BASE_URL, formData, axiosConfig);
         setMessage("Project added successfully");
       }
       setFormData({
@@ -84,7 +95,7 @@ export default function Projects() {
   const handleDeactivate = async (id) => {
     if (!window.confirm("Mark this project as On Hold?")) return;
     try {
-      await axiosInstance.put(`/projects/${id}/deactivate`);
+      await axios.put(`${BASE_URL}/${id}/deactivate`, {}, axiosConfig);
       setMessage("Project marked as On Hold");
       fetchProjects();
     } catch (err) {

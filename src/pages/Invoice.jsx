@@ -15,12 +15,25 @@ export default function Invoice() {
   const [editingId, setEditingId] = useState(null);
   const [message, setMessage] = useState("");
 
+  const token = localStorage.getItem("token");
+
+  // ✅ Base URL for Render backend
+  const BASE_URL = "https://brd-backend-o7n9.onrender.com/api/invoice";
+
+  const axiosConfig = {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  };
+
+  // Fetch Invoices
   const fetchInvoices = async () => {
     try {
-      const res = await axios.get("http://localhost:3000/api/invoice");
+      const res = await axios.get(BASE_URL, axiosConfig);
       setInvoices(res.data.invoices);
     } catch (err) {
       console.error(err);
+      setMessage(err.response?.data?.error || "Failed to fetch invoices");
     }
   };
 
@@ -32,20 +45,18 @@ export default function Invoice() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  // Create or Update Invoice
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setMessage("");
     try {
       if (editingId) {
-        await axios.put(
-          `http://localhost:3000/api/invoice/${editingId}`,
-          formData
-        );
+        await axios.put(`${BASE_URL}/${editingId}`, formData, axiosConfig);
         setMessage("Invoice updated successfully");
         setEditingId(null);
       } else {
-        await axios.post("http://localhost:3000/api/invoice", formData);
+        await axios.post(BASE_URL, formData, axiosConfig);
         setMessage("Invoice created successfully");
       }
       setFormData({
@@ -63,11 +74,12 @@ export default function Invoice() {
     }
   };
 
+  // Edit existing Invoice
   const handleEdit = (invoice) => {
     setEditingId(invoice._id);
     setFormData({
-      customer_id: invoice.customer_id?._id || "",
-      vendor_id: invoice.vendor_id?._id || "",
+      customer_id: invoice.customer_id?._id || invoice.customer_id || "",
+      vendor_id: invoice.vendor_id?._id || invoice.vendor_id || "",
       amount: invoice.amount,
       description: invoice.description,
       date: invoice.date ? invoice.date.split("T")[0] : "",
@@ -88,6 +100,7 @@ export default function Invoice() {
           </p>
         )}
 
+        {/* Form */}
         <form
           onSubmit={handleSubmit}
           className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"
@@ -146,6 +159,7 @@ export default function Invoice() {
           </button>
         </form>
 
+        {/* Invoice List */}
         <h3 className="text-xl font-semibold mb-4">Invoices</h3>
         <div className="overflow-x-auto">
           <table className="w-full table-auto border-collapse border border-gray-300">

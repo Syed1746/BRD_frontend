@@ -5,31 +5,29 @@ import axios from "axios";
 export default function Vendor() {
   const [vendors, setVendors] = useState([]);
   const [formData, setFormData] = useState({
-    name: "",
+    vendor_code: "",
+    vendor_name: "",
     email: "",
-    phone: "",
-    company: "",
+    phone_number: "",
   });
   const [loading, setLoading] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [message, setMessage] = useState("");
 
-  // ✅ Get token from localStorage
   const token = localStorage.getItem("token");
 
-  // ✅ Create axios config with headers
   const axiosConfig = {
     headers: {
       Authorization: `Bearer ${token}`,
     },
   };
 
+  const BASE_URL = "https://brd-backend-o7n9.onrender.com";
+
+  // Fetch all vendors
   const fetchVendors = async () => {
     try {
-      const res = await axios.get(
-        "http://localhost:3000/api/vendor",
-        axiosConfig
-      );
+      const res = await axios.get(`${BASE_URL}/api/vendor`, axiosConfig);
       setVendors(res.data.vendors);
     } catch (err) {
       console.error(err);
@@ -41,10 +39,12 @@ export default function Vendor() {
     fetchVendors();
   }, []);
 
+  // Handle input changes
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  // Add or update vendor
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -52,53 +52,57 @@ export default function Vendor() {
     try {
       if (editingId) {
         await axios.put(
-          `http://localhost:3000/api/vendor/${editingId}`,
+          `${BASE_URL}/api/vendor/${editingId}`,
           formData,
           axiosConfig
         );
         setMessage("Vendor updated successfully");
         setEditingId(null);
       } else {
-        await axios.post(
-          "http://localhost:3000/api/vendor",
-          formData,
-          axiosConfig
-        );
+        await axios.post(`${BASE_URL}/api/vendor`, formData, axiosConfig);
         setMessage("Vendor added successfully");
       }
-      setFormData({ name: "", email: "", phone: "", company: "" });
+      // Reset form
+      setFormData({
+        vendor_code: "",
+        vendor_name: "",
+        email: "",
+        phone_number: "",
+      });
       fetchVendors();
     } catch (err) {
-      setMessage(err.response?.data?.message || "Error saving vendor");
+      setMessage(err.response?.data?.error || "Error saving vendor");
     } finally {
       setLoading(false);
     }
   };
 
+  // Edit vendor
   const handleEdit = (vendor) => {
     setEditingId(vendor._id);
     setFormData({
-      name: vendor.name,
+      vendor_code: vendor.vendor_code,
+      vendor_name: vendor.vendor_name,
       email: vendor.email,
-      phone: vendor.phone,
-      company: vendor.company,
+      phone_number: vendor.phone_number,
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  // Deactivate vendor
   const handleDeactivate = async (id) => {
     if (!window.confirm("Are you sure you want to deactivate this vendor?"))
       return;
     try {
       await axios.patch(
-        `http://localhost:3000/api/vendor/${id}/deactivate`,
+        `${BASE_URL}/api/vendor/${id}/deactivate`,
         {},
         axiosConfig
       );
       setMessage("Vendor deactivated successfully");
       fetchVendors();
     } catch (err) {
-      setMessage(err.response?.data?.message || "Error deactivating vendor");
+      setMessage(err.response?.data?.error || "Error deactivating vendor");
     }
   };
 
@@ -121,9 +125,18 @@ export default function Vendor() {
         >
           <input
             type="text"
-            placeholder="Name"
-            name="name"
-            value={formData.name}
+            placeholder="Vendor Code"
+            name="vendor_code"
+            value={formData.vendor_code}
+            onChange={handleChange}
+            className="p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
+            required
+          />
+          <input
+            type="text"
+            placeholder="Vendor Name"
+            name="vendor_name"
+            value={formData.vendor_name}
             onChange={handleChange}
             className="p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
             required
@@ -139,20 +152,12 @@ export default function Vendor() {
           />
           <input
             type="text"
-            placeholder="Phone"
-            name="phone"
-            value={formData.phone}
+            placeholder="Phone Number"
+            name="phone_number"
+            value={formData.phone_number}
             onChange={handleChange}
             className="p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
             required
-          />
-          <input
-            type="text"
-            placeholder="Company"
-            name="company"
-            value={formData.company}
-            onChange={handleChange}
-            className="p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
           />
 
           <button
@@ -169,10 +174,10 @@ export default function Vendor() {
           <table className="w-full table-auto border-collapse border border-gray-300">
             <thead>
               <tr className="bg-gray-200">
-                <th className="border px-4 py-2">Name</th>
+                <th className="border px-4 py-2">Vendor Code</th>
+                <th className="border px-4 py-2">Vendor Name</th>
                 <th className="border px-4 py-2">Email</th>
                 <th className="border px-4 py-2">Phone</th>
-                <th className="border px-4 py-2">Company</th>
                 <th className="border px-4 py-2">Status</th>
                 <th className="border px-4 py-2">Actions</th>
               </tr>
@@ -187,10 +192,10 @@ export default function Vendor() {
               )}
               {vendors.map((v) => (
                 <tr key={v._id} className="text-center">
-                  <td className="border px-4 py-2">{v.name}</td>
+                  <td className="border px-4 py-2">{v.vendor_code}</td>
+                  <td className="border px-4 py-2">{v.vendor_name}</td>
                   <td className="border px-4 py-2">{v.email}</td>
-                  <td className="border px-4 py-2">{v.phone}</td>
-                  <td className="border px-4 py-2">{v.company}</td>
+                  <td className="border px-4 py-2">{v.phone_number}</td>
                   <td className="border px-4 py-2">{v.status || "Active"}</td>
                   <td className="border px-4 py-2 flex justify-center gap-2">
                     <button

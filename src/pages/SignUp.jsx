@@ -22,11 +22,13 @@ export default function SignUp() {
     e.preventDefault();
     setLoading(true);
     setError("");
+
     try {
       const res = await axios.post(
-        "http://localhost:3000/api/auth/signup",
+        "https://brd-backend-o7n9.onrender.com/api/auth/signup", // ✅ Render backend
         formData
       );
+
       if (res.status === 201) {
         navigate("/"); // Redirect to SignIn page
       }

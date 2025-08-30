@@ -1,4 +1,3 @@
-// src/pages/Attendance.jsx
 import { useState, useEffect } from "react";
 import axios from "axios";
 
@@ -11,12 +10,16 @@ export default function Attendance() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
+  const BASE_URL = "https://brd-backend-o7n9.onrender.com"; // ✅ Deployed backend URL
+
   const fetchAttendance = async () => {
     try {
-      const res = await axios.get("http://localhost:3000/api/attendance", {
+      const token = localStorage.getItem("token");
+      const res = await axios.get(`${BASE_URL}/api/attendance`, {
+        headers: { Authorization: `Bearer ${token}` },
         params: { employee_id: employeeId || undefined },
       });
-      setAttendanceHistory(res.data.attendanceHistory);
+      setAttendanceHistory(res.data.attendanceHistory || []);
     } catch (err) {
       console.error(err);
     }
@@ -34,13 +37,18 @@ export default function Attendance() {
     setLoading(true);
     setMessage("");
     try {
-      const res = await axios.post("http://localhost:3000/api/attendance", {
-        employee_id: employeeId,
-        attendance_date: new Date(),
-        in_time: inTime,
-        out_time: outTime,
-        status,
-      });
+      const token = localStorage.getItem("token");
+      const res = await axios.post(
+        `${BASE_URL}/api/attendance`,
+        {
+          employee_id: employeeId,
+          attendance_date: new Date(),
+          in_time: inTime,
+          out_time: outTime,
+          status,
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
       setMessage(res.data.Message);
       fetchAttendance();
       setInTime("");
@@ -60,12 +68,14 @@ export default function Attendance() {
     setLoading(true);
     setMessage("");
     try {
+      const token = localStorage.getItem("token");
       const res = await axios.post(
-        "http://localhost:3000/api/attendance/leave",
+        `${BASE_URL}/api/attendance/leave`,
         {
           employee_id: employeeId,
           attendance_date: new Date(),
-        }
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       setMessage(res.data.message);
       fetchAttendance();

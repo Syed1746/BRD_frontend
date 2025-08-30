@@ -23,14 +23,14 @@ export default function SignIn() {
 
     try {
       const res = await axios.post(
-        "http://localhost:3000/api/auth/login",
+        "https://brd-backend-o7n9.onrender.com/api/auth/login", // ✅ Render backend
         formData,
         { withCredentials: true }
       );
 
       if (res.status === 200) {
         localStorage.setItem("token", res.data.token);
-        navigate("/dashboard"); // Redirect on successful login
+        navigate("/dashboard");
       }
     } catch (err) {
       setError(err.response?.data?.message || "Invalid credentials");
