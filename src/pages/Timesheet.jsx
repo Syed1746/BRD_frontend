@@ -19,7 +19,7 @@ export default function Timesheet() {
   // Fetch all timesheets
   const fetchTimesheets = async () => {
     try {
-      const res = await axios.get(`${BASE_URL}/timesheet`);
+      const res = await axios.get(`${BASE_URL}/timesheets`);
       setTimesheets(res.data.timesheets || []);
     } catch (err) {
       console.error("Error fetching timesheets:", err);
