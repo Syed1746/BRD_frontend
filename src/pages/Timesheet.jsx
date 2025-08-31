@@ -15,14 +15,21 @@ export default function Timesheet() {
   const [message, setMessage] = useState("");
 
   const BASE_URL = "https://brd-backend-o7n9.onrender.com/api";
+  const token = localStorage.getItem("token"); // ✅ Get token
+  const axiosConfig = {
+    headers: {
+      Authorization: `Bearer ${token}`, // ✅ Pass token in all requests
+    },
+  };
 
   // Fetch all timesheets
   const fetchTimesheets = async () => {
     try {
-      const res = await axios.get(`${BASE_URL}/timesheets`);
+      const res = await axios.get(`${BASE_URL}/timesheets`, axiosConfig);
       setTimesheets(res.data.timesheets || []);
     } catch (err) {
       console.error("Error fetching timesheets:", err);
+      setMessage(err.response?.data?.error || "Error fetching timesheets");
     }
   };
 
@@ -30,23 +37,25 @@ export default function Timesheet() {
     fetchTimesheets();
   }, []);
 
-  // Handle input change
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Handle add/update timesheet
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setMessage("");
     try {
       if (editingId) {
-        await axios.put(`${BASE_URL}/timesheets/${editingId}`, formData);
+        await axios.put(
+          `${BASE_URL}/timesheets/${editingId}`,
+          formData,
+          axiosConfig
+        );
         setMessage("Timesheet updated successfully");
         setEditingId(null);
       } else {
-        await axios.post(`${BASE_URL}/timesheets`, formData);
+        await axios.post(`${BASE_URL}/timesheets`, formData, axiosConfig);
         setMessage("Timesheet added successfully");
       }
       setFormData({
@@ -65,7 +74,6 @@ export default function Timesheet() {
     }
   };
 
-  // Handle editing timesheet
   const handleEdit = (ts) => {
     setEditingId(ts._id);
     setFormData({
@@ -91,7 +99,6 @@ export default function Timesheet() {
           </p>
         )}
 
-        {/* Timesheet Form */}
         <form
           onSubmit={handleSubmit}
           className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"
@@ -151,7 +158,6 @@ export default function Timesheet() {
           </button>
         </form>
 
-        {/* Timesheet Records */}
         <h3 className="text-xl font-semibold mb-4">Timesheet Records</h3>
         <div className="overflow-x-auto">
           <table className="w-full table-auto border-collapse border border-gray-300">
