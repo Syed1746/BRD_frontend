@@ -21,7 +21,7 @@ export default function Attendance() {
     const fetchEmployees = async () => {
       try {
         const res = await axios.get(`${BASE_URL}/employees`, axiosConfig);
-        setEmployees(res.data.employees || []);
+        setEmployees(res.data || []); // ✅ corrected
       } catch (err) {
         console.error("Error fetching employees:", err);
       }
@@ -47,7 +47,6 @@ export default function Attendance() {
     fetchAttendance();
   }, [employeeId]);
 
-  // Mark or update attendance
   const handleMarkAttendance = async () => {
     if (!employeeId) {
       setMessage("Please select an employee");
@@ -57,7 +56,7 @@ export default function Attendance() {
     setMessage("");
     try {
       const payload = {
-        employee_id: employeeId, // ObjectId now
+        employee_id: employeeId,
         attendance_date: new Date().toISOString().split("T")[0],
         in_time: inTime,
         out_time: outTime,
@@ -88,7 +87,6 @@ export default function Attendance() {
     }
   };
 
-  // Mark leave
   const handleMarkLeave = async () => {
     if (!employeeId) {
       setMessage("Please select an employee");
@@ -115,7 +113,6 @@ export default function Attendance() {
     }
   };
 
-  // Edit attendance record
   const handleEdit = (record) => {
     setEditingId(record._id);
     setEmployeeId(record.employee_id._id || record.employee_id);
@@ -139,7 +136,6 @@ export default function Attendance() {
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          {/* Employee Dropdown */}
           <select
             value={employeeId}
             onChange={(e) => setEmployeeId(e.target.value)}
@@ -153,7 +149,6 @@ export default function Attendance() {
             ))}
           </select>
 
-          {/* Attendance Status */}
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value)}
@@ -201,7 +196,6 @@ export default function Attendance() {
           </button>
         </div>
 
-        {/* Attendance History Table */}
         <h3 className="text-xl font-semibold mb-4">Attendance History</h3>
         <div className="overflow-x-auto">
           <table className="w-full table-auto border-collapse border border-gray-300">
