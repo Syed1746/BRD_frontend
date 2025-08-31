@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 
 export default function Attendance() {
+  const [employees, setEmployees] = useState([]);
   const [employeeId, setEmployeeId] = useState("");
   const [inTime, setInTime] = useState("");
   const [outTime, setOutTime] = useState("");
@@ -13,10 +14,20 @@ export default function Attendance() {
 
   const BASE_URL = "https://brd-backend-o7n9.onrender.com/api";
   const token = localStorage.getItem("token");
+  const axiosConfig = { headers: { Authorization: `Bearer ${token}` } };
 
-  const axiosConfig = {
-    headers: { Authorization: `Bearer ${token}` },
-  };
+  // Fetch employees
+  useEffect(() => {
+    const fetchEmployees = async () => {
+      try {
+        const res = await axios.get(`${BASE_URL}/employees`, axiosConfig);
+        setEmployees(res.data.employees || []);
+      } catch (err) {
+        console.error("Error fetching employees:", err);
+      }
+    };
+    fetchEmployees();
+  }, []);
 
   // Fetch attendance history
   const fetchAttendance = async () => {
@@ -39,14 +50,14 @@ export default function Attendance() {
   // Mark or update attendance
   const handleMarkAttendance = async () => {
     if (!employeeId) {
-      setMessage("Please enter Employee ID");
+      setMessage("Please select an employee");
       return;
     }
     setLoading(true);
     setMessage("");
     try {
       const payload = {
-        employee_id: employeeId,
+        employee_id: employeeId, // ObjectId now
         attendance_date: new Date().toISOString().split("T")[0],
         in_time: inTime,
         out_time: outTime,
@@ -80,7 +91,7 @@ export default function Attendance() {
   // Mark leave
   const handleMarkLeave = async () => {
     if (!employeeId) {
-      setMessage("Please enter Employee ID");
+      setMessage("Please select an employee");
       return;
     }
     setLoading(true);
@@ -128,13 +139,21 @@ export default function Attendance() {
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <input
-            type="text"
-            placeholder="Employee ID"
+          {/* Employee Dropdown */}
+          <select
             value={employeeId}
             onChange={(e) => setEmployeeId(e.target.value)}
             className="p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
-          />
+          >
+            <option value="">Select Employee</option>
+            {employees.map((emp) => (
+              <option key={emp._id} value={emp._id}>
+                {emp.first_name} {emp.last_name} ({emp.employee_code})
+              </option>
+            ))}
+          </select>
+
+          {/* Attendance Status */}
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value)}
@@ -144,6 +163,7 @@ export default function Attendance() {
             <option value="Remote">Remote</option>
             <option value="On Leave">On Leave</option>
           </select>
+
           <input
             type="time"
             placeholder="In Time"
@@ -181,6 +201,7 @@ export default function Attendance() {
           </button>
         </div>
 
+        {/* Attendance History Table */}
         <h3 className="text-xl font-semibold mb-4">Attendance History</h3>
         <div className="overflow-x-auto">
           <table className="w-full table-auto border-collapse border border-gray-300">
