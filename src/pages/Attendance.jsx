@@ -9,19 +9,26 @@ export default function Attendance() {
   const [attendanceHistory, setAttendanceHistory] = useState([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [editingId, setEditingId] = useState(null);
 
-  const BASE_URL = "https://brd-backend-o7n9.onrender.com"; // ✅ Deployed backend URL
+  const BASE_URL = "https://brd-backend-o7n9.onrender.com/api";
+  const token = localStorage.getItem("token");
 
+  const axiosConfig = {
+    headers: { Authorization: `Bearer ${token}` },
+  };
+
+  // Fetch attendance history
   const fetchAttendance = async () => {
     try {
-      const token = localStorage.getItem("token");
-      const res = await axios.get(`${BASE_URL}/api/attendance`, {
-        headers: { Authorization: `Bearer ${token}` },
+      const res = await axios.get(`${BASE_URL}/attendance`, {
+        ...axiosConfig,
         params: { employee_id: employeeId || undefined },
       });
       setAttendanceHistory(res.data.attendanceHistory || []);
     } catch (err) {
       console.error(err);
+      setMessage(err.response?.data?.message || "Error fetching attendance");
     }
   };
 
@@ -29,6 +36,7 @@ export default function Attendance() {
     fetchAttendance();
   }, [employeeId]);
 
+  // Mark or update attendance
   const handleMarkAttendance = async () => {
     if (!employeeId) {
       setMessage("Please enter Employee ID");
@@ -37,22 +45,31 @@ export default function Attendance() {
     setLoading(true);
     setMessage("");
     try {
-      const token = localStorage.getItem("token");
-      const res = await axios.post(
-        `${BASE_URL}/api/attendance`,
-        {
-          employee_id: employeeId,
-          attendance_date: new Date(),
-          in_time: inTime,
-          out_time: outTime,
-          status,
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setMessage(res.data.Message);
-      fetchAttendance();
+      const payload = {
+        employee_id: employeeId,
+        attendance_date: new Date().toISOString().split("T")[0],
+        in_time: inTime,
+        out_time: outTime,
+        status,
+      };
+
+      if (editingId) {
+        await axios.put(
+          `${BASE_URL}/attendance/${editingId}`,
+          payload,
+          axiosConfig
+        );
+        setMessage("Attendance updated successfully");
+        setEditingId(null);
+      } else {
+        await axios.post(`${BASE_URL}/attendance`, payload, axiosConfig);
+        setMessage("Attendance marked successfully");
+      }
+
       setInTime("");
       setOutTime("");
+      setStatus("Present");
+      fetchAttendance();
     } catch (err) {
       setMessage(err.response?.data?.message || "Error marking attendance");
     } finally {
@@ -60,6 +77,7 @@ export default function Attendance() {
     }
   };
 
+  // Mark leave
   const handleMarkLeave = async () => {
     if (!employeeId) {
       setMessage("Please enter Employee ID");
@@ -68,16 +86,16 @@ export default function Attendance() {
     setLoading(true);
     setMessage("");
     try {
-      const token = localStorage.getItem("token");
-      const res = await axios.post(
-        `${BASE_URL}/api/attendance/leave`,
+      await axios.post(
+        `${BASE_URL}/attendance/leave`,
         {
           employee_id: employeeId,
-          attendance_date: new Date(),
+          attendance_date: new Date().toISOString().split("T")[0],
         },
-        { headers: { Authorization: `Bearer ${token}` } }
+        axiosConfig
       );
-      setMessage(res.data.message);
+      setMessage("Leave marked successfully");
+      setStatus("On Leave");
       fetchAttendance();
     } catch (err) {
       setMessage(err.response?.data?.message || "Error marking leave");
@@ -86,10 +104,22 @@ export default function Attendance() {
     }
   };
 
+  // Edit attendance record
+  const handleEdit = (record) => {
+    setEditingId(record._id);
+    setEmployeeId(record.employee_id._id || record.employee_id);
+    setInTime(record.in_time || "");
+    setOutTime(record.out_time || "");
+    setStatus(record.status || "Present");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   return (
     <div className="p-6 bg-gray-100 min-h-screen">
       <div className="max-w-3xl mx-auto bg-white p-6 rounded-lg shadow-lg">
-        <h2 className="text-2xl font-bold mb-6 text-center">Attendance</h2>
+        <h2 className="text-2xl font-bold mb-6 text-center">
+          {editingId ? "Edit Attendance" : "Mark Attendance"}
+        </h2>
 
         {message && (
           <p className="mb-4 text-center text-blue-600 font-medium">
@@ -136,14 +166,18 @@ export default function Attendance() {
             disabled={loading}
             className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 rounded transition"
           >
-            {loading ? "Marking..." : "Mark Attendance"}
+            {loading
+              ? "Processing..."
+              : editingId
+              ? "Update Attendance"
+              : "Mark Attendance"}
           </button>
           <button
             onClick={handleMarkLeave}
             disabled={loading}
             className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white py-2 rounded transition"
           >
-            {loading ? "Marking..." : "Mark Leave"}
+            {loading ? "Processing..." : "Mark Leave"}
           </button>
         </div>
 
@@ -157,31 +191,41 @@ export default function Attendance() {
                 <th className="border px-4 py-2">In Time</th>
                 <th className="border px-4 py-2">Out Time</th>
                 <th className="border px-4 py-2">Status</th>
+                <th className="border px-4 py-2">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {attendanceHistory.length === 0 && (
+              {attendanceHistory.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="text-center py-4">
+                  <td colSpan="6" className="text-center py-4">
                     No attendance records
                   </td>
                 </tr>
+              ) : (
+                attendanceHistory.map((item) => (
+                  <tr key={item._id} className="text-center">
+                    <td className="border px-4 py-2">
+                      {typeof item.employee_id === "object"
+                        ? `${item.employee_id.first_name} ${item.employee_id.last_name} (${item.employee_id.employee_code})`
+                        : item.employee_id}
+                    </td>
+                    <td className="border px-4 py-2">
+                      {new Date(item.attendance_date).toLocaleDateString()}
+                    </td>
+                    <td className="border px-4 py-2">{item.in_time || "-"}</td>
+                    <td className="border px-4 py-2">{item.out_time || "-"}</td>
+                    <td className="border px-4 py-2">{item.status}</td>
+                    <td className="border px-4 py-2">
+                      <button
+                        onClick={() => handleEdit(item)}
+                        className="bg-yellow-500 hover:bg-yellow-600 text-white py-1 px-3 rounded transition"
+                      >
+                        Edit
+                      </button>
+                    </td>
+                  </tr>
+                ))
               )}
-              {attendanceHistory.map((item) => (
-                <tr key={item._id} className="text-center">
-                  <td className="border px-4 py-2">
-                    {typeof item.employee_id === "object"
-                      ? `${item.employee_id.first_name} ${item.employee_id.last_name} (${item.employee_id.employee_code})`
-                      : item.employee_id}
-                  </td>
-                  <td className="border px-4 py-2">
-                    {new Date(item.attendance_date).toLocaleDateString()}
-                  </td>
-                  <td className="border px-4 py-2">{item.in_time || "-"}</td>
-                  <td className="border px-4 py-2">{item.out_time || "-"}</td>
-                  <td className="border px-4 py-2">{item.status}</td>
-                </tr>
-              ))}
             </tbody>
           </table>
         </div>
