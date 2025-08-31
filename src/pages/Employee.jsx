@@ -52,11 +52,11 @@ export default function EmployeePage() {
       const token = localStorage.getItem("token");
 
       if (editId) {
-        await axios.put(`${BASE_URL}/api/employee/${editId}`, formData, {
+        await axios.put(`${BASE_URL}/api/employees/${editId}`, formData, {
           headers: { Authorization: `Bearer ${token}` },
         });
       } else {
-        await axios.post(`${BASE_URL}/api/employee`, formData, {
+        await axios.post(`${BASE_URL}/api/employees`, formData, {
           headers: { Authorization: `Bearer ${token}` },
         });
       }

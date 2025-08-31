@@ -42,7 +42,7 @@ export default function Timesheet() {
     setMessage("");
     try {
       if (editingId) {
-        await axios.put(`${BASE_URL}/timesheet/${editingId}`, formData);
+        await axios.put(`${BASE_URL}/timesheets/${editingId}`, formData);
         setMessage("Timesheet updated successfully");
         setEditingId(null);
       } else {

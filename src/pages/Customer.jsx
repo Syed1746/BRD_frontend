@@ -51,14 +51,14 @@ export default function Customer() {
     try {
       if (editingId) {
         await axios.put(
-          `${BASE_URL}/api/customer/${editingId}`,
+          `${BASE_URL}/api/customers/${editingId}`,
           formData,
           config
         );
         setMessage("Customer updated successfully");
         setEditingId(null);
       } else {
-        await axios.post(`${BASE_URL}/api/customer`, formData, config);
+        await axios.post(`${BASE_URL}/api/customers`, formData, config);
         setMessage("Customer added successfully");
       }
       setFormData({
@@ -90,7 +90,7 @@ export default function Customer() {
     if (!window.confirm("Are you sure you want to deactivate this customer?"))
       return;
     try {
-      await axios.put(`${BASE_URL}/api/customer/${id}/deactivate`, {}, config);
+      await axios.put(`${BASE_URL}/api/customers/${id}/deactivate`, {}, config);
       setMessage("Customer deactivated");
       fetchCustomers();
     } catch (err) {

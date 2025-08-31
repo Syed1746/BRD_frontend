@@ -52,14 +52,14 @@ export default function Vendor() {
     try {
       if (editingId) {
         await axios.put(
-          `${BASE_URL}/api/vendor/${editingId}`,
+          `${BASE_URL}/api/vendors/${editingId}`,
           formData,
           axiosConfig
         );
         setMessage("Vendor updated successfully");
         setEditingId(null);
       } else {
-        await axios.post(`${BASE_URL}/api/vendor`, formData, axiosConfig);
+        await axios.post(`${BASE_URL}/api/vendors`, formData, axiosConfig);
         setMessage("Vendor added successfully");
       }
       // Reset form
@@ -95,7 +95,7 @@ export default function Vendor() {
       return;
     try {
       await axios.patch(
-        `${BASE_URL}/api/vendor/${id}/deactivate`,
+        `${BASE_URL}/api/vendors/${id}/deactivate`,
         {},
         axiosConfig
       );
