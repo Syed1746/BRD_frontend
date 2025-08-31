@@ -22,18 +22,17 @@ export default function Timesheet() {
   const token = localStorage.getItem("token");
   const axiosConfig = { headers: { Authorization: `Bearer ${token}` } };
 
-  // --- Helpers ------------------------------------------------------------
+  // --- Helpers
   const safeSetMessage = (err, fallback) => {
     setMessage(
       err?.response?.data?.error || err?.response?.data?.message || fallback
     );
   };
 
-  // --- Fetch Employees & Projects (for dropdowns) -------------------------
+  // --- Fetch Employees & Projects
   const fetchEmployees = async () => {
     try {
       const res = await axios.get(`${BASE_URL}/employees`, axiosConfig);
-      // Your /api/employees returns an array directly
       setEmployees(
         Array.isArray(res.data) ? res.data : res.data?.employees || []
       );
@@ -46,7 +45,6 @@ export default function Timesheet() {
   const fetchProjects = async () => {
     try {
       const res = await axios.get(`${BASE_URL}/projects`, axiosConfig);
-      // Your /api/projects returns { projects: [...] }
       const arr = Array.isArray(res.data) ? res.data : res.data?.projects || [];
       setProjects(arr);
     } catch (err) {
@@ -55,7 +53,7 @@ export default function Timesheet() {
     }
   };
 
-  // --- Fetch Timesheets ---------------------------------------------------
+  // --- Fetch Timesheets
   const fetchTimesheets = async () => {
     try {
       const res = await axios.get(`${BASE_URL}/timesheets`, axiosConfig);
@@ -77,7 +75,7 @@ export default function Timesheet() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // --- Form handlers ------------------------------------------------------
+  // --- Form handlers
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((f) => ({ ...f, [name]: value }));
@@ -92,7 +90,6 @@ export default function Timesheet() {
     setLoading(true);
     setMessage("");
 
-    // Ensure numeric hours
     const payload = {
       ...formData,
       hours_worked: Number(formData.hours_worked),
@@ -112,7 +109,6 @@ export default function Timesheet() {
         setMessage("Timesheet added successfully");
       }
 
-      // reset
       setFormData({
         employee_id: "",
         project_id: "",
@@ -144,7 +140,7 @@ export default function Timesheet() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // --- UI -----------------------------------------------------------------
+  // --- UI
   return (
     <div className="p-6 bg-gray-100 min-h-screen">
       <div className="max-w-5xl mx-auto bg-white p-6 rounded-lg shadow-lg">
@@ -163,7 +159,7 @@ export default function Timesheet() {
           onSubmit={handleSubmit}
           className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"
         >
-          {/* Employee dropdown (ObjectId) */}
+          {/* Employee dropdown */}
           <select
             name="employee_id"
             value={formData.employee_id}
@@ -179,7 +175,7 @@ export default function Timesheet() {
             ))}
           </select>
 
-          {/* Project dropdown (ObjectId) */}
+          {/* Project dropdown */}
           <select
             name="project_id"
             value={formData.project_id}
@@ -190,7 +186,10 @@ export default function Timesheet() {
             <option value="">Select Project</option>
             {projects.map((p) => (
               <option key={p._id} value={p._id}>
-                {p.project_name || p.name || p.project_code}
+                {p.project_name ||
+                  p.name ||
+                  p.project_code ||
+                  "Unnamed Project"}
               </option>
             ))}
           </select>
@@ -264,16 +263,19 @@ export default function Timesheet() {
               {timesheets.map((ts) => (
                 <tr key={ts._id} className="text-center">
                   <td className="border px-4 py-2">
-                    {typeof ts.employee_id === "object"
-                      ? `${ts.employee_id.first_name} ${ts.employee_id.last_name} (${ts.employee_id.employee_code})`
-                      : ts.employee_id}
+                    {ts.employee_id
+                      ? `${ts.employee_id.first_name || ""} ${
+                          ts.employee_id.last_name || ""
+                        } (${ts.employee_id.employee_code || ""})`
+                      : "—"}
                   </td>
                   <td className="border px-4 py-2">
-                    {typeof ts.project_id === "object"
+                    {ts.project_id
                       ? ts.project_id.project_name ||
                         ts.project_id.name ||
-                        ts.project_id.project_code
-                      : ts.project_id || "—"}
+                        ts.project_id.project_code ||
+                        "Unnamed"
+                      : "—"}
                   </td>
                   <td className="border px-4 py-2">
                     {ts.date ? new Date(ts.date).toLocaleDateString() : "—"}
