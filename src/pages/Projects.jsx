@@ -10,7 +10,7 @@ export default function Projects() {
     description: "",
     start_date: "",
     end_date: "",
-    status: "Active",
+    status: "Planned", // ✅ Default status is now Planned
   });
   const [loading, setLoading] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -24,14 +24,13 @@ export default function Projects() {
     },
   };
 
-  // ✅ Change this to your backend base URL
   const BASE_URL = "https://brd-backend-o7n9.onrender.com/api/projects";
 
-  // Fetch projects from API
+  // Fetch projects
   const fetchProjects = async () => {
     try {
       const res = await axios.get(BASE_URL, axiosConfig);
-      setProjects(res.data.projects);
+      setProjects(res.data.projects || []);
     } catch (err) {
       console.error(err);
       setMessage(err.response?.data?.error || "Failed to fetch projects");
@@ -42,12 +41,10 @@ export default function Projects() {
     fetchProjects();
   }, []);
 
-  // Handle input changes
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Add or update project
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -67,7 +64,7 @@ export default function Projects() {
         description: "",
         start_date: "",
         end_date: "",
-        status: "Planned",
+        status: "Planned", // ✅ Reset to Planned after submit
       });
       fetchProjects();
     } catch (err) {
@@ -77,7 +74,6 @@ export default function Projects() {
     }
   };
 
-  // Edit existing project
   const handleEdit = (project) => {
     setEditingId(project._id);
     setFormData({
@@ -86,12 +82,11 @@ export default function Projects() {
       description: project.description,
       start_date: project.start_date ? project.start_date.split("T")[0] : "",
       end_date: project.end_date ? project.end_date.split("T")[0] : "",
-      status: project.status || "In Progress",
+      status: project.status || "Planned", // ✅ Use project.status or default to Planned
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // Deactivate project (mark On Hold)
   const handleDeactivate = async (id) => {
     if (!window.confirm("Mark this project as On Hold?")) return;
     try {
@@ -116,7 +111,6 @@ export default function Projects() {
           </p>
         )}
 
-        {/* Form */}
         <form
           onSubmit={handleSubmit}
           className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"
@@ -166,9 +160,9 @@ export default function Projects() {
             onChange={handleChange}
             className="p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
           >
+            <option value="Planned">Planned</option>
             <option value="In Progress">In Progress</option>
             <option value="On Hold">On Hold</option>
-            <option value="Planned">Planned</option>
             <option value="Completed">Completed</option>
           </select>
           <button
@@ -184,7 +178,6 @@ export default function Projects() {
           </button>
         </form>
 
-        {/* Projects Table */}
         <h3 className="text-xl font-semibold mb-4">Project List</h3>
         <div className="overflow-x-auto">
           <table className="w-full table-auto border-collapse border border-gray-300">
