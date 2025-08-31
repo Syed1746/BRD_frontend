@@ -67,7 +67,7 @@ export default function Projects() {
         description: "",
         start_date: "",
         end_date: "",
-        status: "Active",
+        status: "Planned",
       });
       fetchProjects();
     } catch (err) {
@@ -86,7 +86,7 @@ export default function Projects() {
       description: project.description,
       start_date: project.start_date ? project.start_date.split("T")[0] : "",
       end_date: project.end_date ? project.end_date.split("T")[0] : "",
-      status: project.status || "Active",
+      status: project.status || "In Progress",
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -166,8 +166,10 @@ export default function Projects() {
             onChange={handleChange}
             className="p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
           >
-            <option value="Active">Active</option>
+            <option value="In Progress">In Progress</option>
             <option value="On Hold">On Hold</option>
+            <option value="Planned">Planned</option>
+            <option value="Completed">Completed</option>
           </select>
           <button
             type="submit"
