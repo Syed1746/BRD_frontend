@@ -7,18 +7,19 @@ export default function Timesheet() {
     employee_id: "",
     project_id: "",
     date: new Date().toISOString().split("T")[0],
-    hours: "",
-    description: "",
+    hours_worked: "",
+    task_description: "",
   });
   const [loading, setLoading] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [message, setMessage] = useState("");
 
   const BASE_URL = "https://brd-backend-o7n9.onrender.com/api";
-  const token = localStorage.getItem("token"); // ✅ Get token
+  const token = localStorage.getItem("token");
+
   const axiosConfig = {
     headers: {
-      Authorization: `Bearer ${token}`, // ✅ Pass token in all requests
+      Authorization: `Bearer ${token}`,
     },
   };
 
@@ -58,12 +59,13 @@ export default function Timesheet() {
         await axios.post(`${BASE_URL}/timesheets`, formData, axiosConfig);
         setMessage("Timesheet added successfully");
       }
+
       setFormData({
         employee_id: "",
         project_id: "",
         date: new Date().toISOString().split("T")[0],
-        hours: "",
-        description: "",
+        hours_worked: "",
+        task_description: "",
       });
       fetchTimesheets();
     } catch (err) {
@@ -80,8 +82,8 @@ export default function Timesheet() {
       employee_id: ts.employee_id?._id || ts.employee_id,
       project_id: ts.project_id?._id || ts.project_id,
       date: ts.date ? ts.date.split("T")[0] : "",
-      hours: ts.hours,
-      description: ts.description,
+      hours_worked: ts.hours_worked || ts.hours,
+      task_description: ts.task_description || ts.description,
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -99,6 +101,7 @@ export default function Timesheet() {
           </p>
         )}
 
+        {/* Timesheet Form */}
         <form
           onSubmit={handleSubmit}
           className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"
@@ -130,18 +133,18 @@ export default function Timesheet() {
           />
           <input
             type="number"
-            name="hours"
+            name="hours_worked"
             placeholder="Hours Worked"
-            value={formData.hours}
+            value={formData.hours_worked}
             onChange={handleChange}
             className="p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
             required
           />
           <input
             type="text"
-            name="description"
+            name="task_description"
             placeholder="Description / Task"
-            value={formData.description}
+            value={formData.task_description}
             onChange={handleChange}
             className="p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 col-span-1 md:col-span-2 w-full"
           />
@@ -158,6 +161,7 @@ export default function Timesheet() {
           </button>
         </form>
 
+        {/* Timesheet Records */}
         <h3 className="text-xl font-semibold mb-4">Timesheet Records</h3>
         <div className="overflow-x-auto">
           <table className="w-full table-auto border-collapse border border-gray-300">
@@ -182,16 +186,20 @@ export default function Timesheet() {
               {timesheets.map((ts) => (
                 <tr key={ts._id} className="text-center">
                   <td className="border px-4 py-2">
-                    {ts.employee_id?.name || ts.employee_id}
+                    {ts.employee_id
+                      ? `${ts.employee_id.first_name} ${ts.employee_id.last_name}`
+                      : "N/A"}
                   </td>
                   <td className="border px-4 py-2">
-                    {ts.project_id?.name || ts.project_id}
+                    {ts.project_id
+                      ? ts.project_id.project_name || ts.project_id.name
+                      : "N/A"}
                   </td>
                   <td className="border px-4 py-2">
                     {ts.date ? new Date(ts.date).toLocaleDateString() : "-"}
                   </td>
-                  <td className="border px-4 py-2">{ts.hours}</td>
-                  <td className="border px-4 py-2">{ts.description}</td>
+                  <td className="border px-4 py-2">{ts.hours_worked}</td>
+                  <td className="border px-4 py-2">{ts.task_description}</td>
                   <td className="border px-4 py-2">
                     <button
                       onClick={() => handleEdit(ts)}
