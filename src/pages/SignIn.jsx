@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { BASE_URL } from "../../config";
 
 export default function SignIn() {
   const [formData, setFormData] = useState({
@@ -22,14 +23,14 @@ export default function SignIn() {
     setError("");
 
     try {
-      const res = await axios.post(
-        "https://brd-backend-o7n9.onrender.com/api/auth/login", // ✅ Render backend
-        formData,
-        { withCredentials: true }
-      );
+      const res = await axios.post(`${BASE_URL}/api/auth/login`, formData);
 
       if (res.status === 200) {
+        // Save token and role from backend response
         localStorage.setItem("token", res.data.token);
+        localStorage.setItem("role", res.data.role); // "Admin", "Manager", "Employee"
+
+        // Redirect to dashboard (same path for everyone)
         navigate("/dashboard");
       }
     } catch (err) {
