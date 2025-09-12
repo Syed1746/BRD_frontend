@@ -1,59 +1,87 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, Fragment } from "react";
+import { Dialog, Transition } from "@headlessui/react";
 import axios from "axios";
+import { Plus, X, Clock, UserCheck, Laptop, Coffee } from "lucide-react";
 
 export default function Attendance() {
+  const [user, setUser] = useState(null);
   const [employees, setEmployees] = useState([]);
+  const [attendanceHistory, setAttendanceHistory] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
+  const [open, setOpen] = useState(false);
+
   const [employeeId, setEmployeeId] = useState("");
   const [inTime, setInTime] = useState("");
   const [outTime, setOutTime] = useState("");
   const [status, setStatus] = useState("Present");
-  const [attendanceHistory, setAttendanceHistory] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
   const [editingId, setEditingId] = useState(null);
 
   const BASE_URL = "https://brd-backend-o7n9.onrender.com/api";
   const token = localStorage.getItem("token");
   const axiosConfig = { headers: { Authorization: `Bearer ${token}` } };
 
-  // Fetch employees
+  // Load user from localStorage
   useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) setUser(JSON.parse(storedUser));
+  }, []);
+
+  const isAdminOrManager = user?.role === "Admin" || user?.role === "Manager";
+  const loggedInEmployeeId = user?.employee_id || user?.id;
+
+  // Fetch employees for Admin/Manager
+  useEffect(() => {
+    if (!isAdminOrManager) return;
     const fetchEmployees = async () => {
       try {
         const res = await axios.get(`${BASE_URL}/employees`, axiosConfig);
-        setEmployees(res.data || []); // ✅ corrected
+        setEmployees(res.data || []);
       } catch (err) {
-        console.error("Error fetching employees:", err);
+        console.error(err);
       }
     };
     fetchEmployees();
-  }, []);
+  }, [isAdminOrManager]);
 
   // Fetch attendance history
-  const fetchAttendance = async () => {
-    try {
-      const res = await axios.get(`${BASE_URL}/attendance`, {
-        ...axiosConfig,
-        params: { employee_id: employeeId || undefined },
-      });
-      setAttendanceHistory(res.data.attendanceHistory || []);
-    } catch (err) {
-      console.error(err);
-      setMessage(err.response?.data?.message || "Error fetching attendance");
+  useEffect(() => {
+    const fetchAttendance = async () => {
+      try {
+        const res = await axios.get(`${BASE_URL}/attendance`, axiosConfig);
+        setAttendanceHistory(res.data.attendanceHistory || []);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchAttendance();
+  }, []);
+
+  const openModal = (record = null) => {
+    if (record) {
+      setEditingId(record._id);
+      setEmployeeId(record.employee_id._id || record.employee_id);
+      setInTime(record.in_time || "");
+      setOutTime(record.out_time || "");
+      setStatus(record.status || "Present");
+    } else {
+      setEditingId(null);
+      setEmployeeId(loggedInEmployeeId);
+      setInTime("");
+      setOutTime("");
+      setStatus("Present");
     }
+    setMessage("");
+    setOpen(true);
   };
 
-  useEffect(() => {
-    fetchAttendance();
-  }, [employeeId]);
-
-  const handleMarkAttendance = async () => {
+  const handleSubmit = async () => {
     if (!employeeId) {
-      setMessage("Please select an employee");
+      setMessage("Employee ID not found.");
       return;
     }
+
     setLoading(true);
-    setMessage("");
     try {
       const payload = {
         employee_id: employeeId,
@@ -62,7 +90,6 @@ export default function Attendance() {
         out_time: outTime,
         status,
       };
-
       if (editingId) {
         await axios.put(
           `${BASE_URL}/attendance/${editingId}`,
@@ -70,181 +97,249 @@ export default function Attendance() {
           axiosConfig
         );
         setMessage("Attendance updated successfully");
-        setEditingId(null);
       } else {
         await axios.post(`${BASE_URL}/attendance`, payload, axiosConfig);
         setMessage("Attendance marked successfully");
       }
 
-      setInTime("");
-      setOutTime("");
-      setStatus("Present");
-      fetchAttendance();
+      setOpen(false);
+      // Refresh attendance
+      const res = await axios.get(`${BASE_URL}/attendance`, axiosConfig);
+      setAttendanceHistory(res.data.attendanceHistory || []);
     } catch (err) {
-      setMessage(err.response?.data?.message || "Error marking attendance");
+      setMessage(err.response?.data?.message || "Error submitting attendance");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleMarkLeave = async () => {
-    if (!employeeId) {
-      setMessage("Please select an employee");
-      return;
-    }
-    setLoading(true);
-    setMessage("");
-    try {
-      await axios.post(
-        `${BASE_URL}/attendance/leave`,
-        {
-          employee_id: employeeId,
-          attendance_date: new Date().toISOString().split("T")[0],
-        },
-        axiosConfig
-      );
-      setMessage("Leave marked successfully");
-      setStatus("On Leave");
-      fetchAttendance();
-    } catch (err) {
-      setMessage(err.response?.data?.message || "Error marking leave");
-    } finally {
-      setLoading(false);
+  const statusBadge = (status) => {
+    switch (status) {
+      case "Present":
+        return (
+          <span className="flex items-center gap-1 bg-green-100 text-green-600 px-3 py-1 rounded-full text-xs font-medium">
+            <UserCheck size={14} /> Present
+          </span>
+        );
+      case "Remote":
+        return (
+          <span className="flex items-center gap-1 bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-xs font-medium">
+            <Laptop size={14} /> Remote
+          </span>
+        );
+      case "On Leave":
+        return (
+          <span className="flex items-center gap-1 bg-yellow-100 text-yellow-600 px-3 py-1 rounded-full text-xs font-medium">
+            <Coffee size={14} /> On Leave
+          </span>
+        );
+      default:
+        return status;
     }
   };
 
-  const handleEdit = (record) => {
-    setEditingId(record._id);
-    setEmployeeId(record.employee_id._id || record.employee_id);
-    setInTime(record.in_time || "");
-    setOutTime(record.out_time || "");
-    setStatus(record.status || "Present");
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
+  if (!user)
+    return (
+      <p className="text-center mt-20 text-gray-600">Loading user info...</p>
+    );
 
   return (
-    <div className="p-6 bg-gray-100 min-h-screen">
-      <div className="max-w-3xl mx-auto bg-white p-6 rounded-lg shadow-lg">
-        <h2 className="text-2xl font-bold mb-6 text-center">
-          {editingId ? "Edit Attendance" : "Mark Attendance"}
-        </h2>
-
-        {message && (
-          <p className="mb-4 text-center text-blue-600 font-medium">
-            {message}
-          </p>
+    <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen space-y-8">
+      <div className="flex justify-between items-center">
+        <h2 className="text-3xl font-extrabold text-gray-800">Attendance</h2>
+        {isAdminOrManager && (
+          <button
+            onClick={() => openModal()}
+            className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-xl hover:bg-blue-700 shadow-md transition-transform transform hover:scale-105"
+          >
+            <Plus className="w-5 h-5" /> Add Attendance
+          </button>
         )}
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <select
-            value={employeeId}
-            onChange={(e) => setEmployeeId(e.target.value)}
-            className="p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
-          >
-            <option value="">Select Employee</option>
-            {employees.map((emp) => (
-              <option key={emp._id} value={emp._id}>
-                {emp.first_name} {emp.last_name} ({emp.employee_code})
-              </option>
-            ))}
-          </select>
-
-          <select
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-            className="p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
-          >
-            <option value="Present">Present</option>
-            <option value="Remote">Remote</option>
-            <option value="On Leave">On Leave</option>
-          </select>
-
-          <input
-            type="time"
-            placeholder="In Time"
-            value={inTime}
-            onChange={(e) => setInTime(e.target.value)}
-            className="p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
-          />
-          <input
-            type="time"
-            placeholder="Out Time"
-            value={outTime}
-            onChange={(e) => setOutTime(e.target.value)}
-            className="p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
-          />
-        </div>
-
-        <div className="flex gap-4 mb-6">
-          <button
-            onClick={handleMarkAttendance}
-            disabled={loading}
-            className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 rounded transition"
-          >
-            {loading
-              ? "Processing..."
-              : editingId
-              ? "Update Attendance"
-              : "Mark Attendance"}
-          </button>
-          <button
-            onClick={handleMarkLeave}
-            disabled={loading}
-            className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white py-2 rounded transition"
-          >
-            {loading ? "Processing..." : "Mark Leave"}
-          </button>
-        </div>
-
-        <h3 className="text-xl font-semibold mb-4">Attendance History</h3>
-        <div className="overflow-x-auto">
-          <table className="w-full table-auto border-collapse border border-gray-300">
-            <thead>
-              <tr className="bg-gray-200">
-                <th className="border px-4 py-2">Employee</th>
-                <th className="border px-4 py-2">Date</th>
-                <th className="border px-4 py-2">In Time</th>
-                <th className="border px-4 py-2">Out Time</th>
-                <th className="border px-4 py-2">Status</th>
-                <th className="border px-4 py-2">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {attendanceHistory.length === 0 ? (
-                <tr>
-                  <td colSpan="6" className="text-center py-4">
-                    No attendance records
-                  </td>
-                </tr>
-              ) : (
-                attendanceHistory.map((item) => (
-                  <tr key={item._id} className="text-center">
-                    <td className="border px-4 py-2">
-                      {typeof item.employee_id === "object"
-                        ? `${item.employee_id.first_name} ${item.employee_id.last_name} (${item.employee_id.employee_code})`
-                        : item.employee_id}
-                    </td>
-                    <td className="border px-4 py-2">
-                      {new Date(item.attendance_date).toLocaleDateString()}
-                    </td>
-                    <td className="border px-4 py-2">{item.in_time || "-"}</td>
-                    <td className="border px-4 py-2">{item.out_time || "-"}</td>
-                    <td className="border px-4 py-2">{item.status}</td>
-                    <td className="border px-4 py-2">
-                      <button
-                        onClick={() => handleEdit(item)}
-                        className="bg-yellow-500 hover:bg-yellow-600 text-white py-1 px-3 rounded transition"
-                      >
-                        Edit
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
       </div>
+
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {attendanceHistory.length === 0 ? (
+          <div className="col-span-full text-center text-gray-500 py-10 bg-white rounded-xl shadow">
+            No attendance records found.
+          </div>
+        ) : (
+          attendanceHistory.map((item) => (
+            <div
+              key={item._id}
+              className="bg-white rounded-xl shadow-md p-5 hover:shadow-lg transition relative"
+            >
+              <div className="flex justify-between items-start">
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-800">
+                    {typeof item.employee_id === "object"
+                      ? `${item.employee_id.first_name} ${item.employee_id.last_name}`
+                      : item.employee_id}
+                  </h4>
+                  <p className="text-sm text-gray-500">
+                    {typeof item.employee_id === "object" &&
+                      `(${item.employee_id.employee_code})`}
+                  </p>
+                </div>
+                {isAdminOrManager && (
+                  <button
+                    onClick={() => openModal(item)}
+                    className="text-yellow-600 hover:bg-yellow-100 p-2 rounded-full transition"
+                  >
+                    Edit
+                  </button>
+                )}
+              </div>
+
+              <div className="mt-4 space-y-2">
+                <p className="text-sm flex items-center gap-2 text-gray-600">
+                  <Clock size={16} className="text-gray-400" />{" "}
+                  {new Date(item.attendance_date).toLocaleDateString()}
+                </p>
+                <p className="text-sm text-gray-600">
+                  In:{" "}
+                  <span className="font-medium">{item.in_time || "--:--"}</span>{" "}
+                  | Out:{" "}
+                  <span className="font-medium">
+                    {item.out_time || "--:--"}
+                  </span>
+                </p>
+                {statusBadge(item.status)}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Modal */}
+      <Transition appear show={open} as={Fragment}>
+        <Dialog
+          as="div"
+          className="relative z-50"
+          onClose={() => setOpen(false)}
+        >
+          <Transition.Child
+            as={Fragment}
+            enter="ease-out duration-300"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-200"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" />
+          </Transition.Child>
+
+          <div className="fixed inset-0 flex items-center justify-center p-4">
+            <Transition.Child
+              as={Fragment}
+              enter="ease-out duration-300"
+              enterFrom="opacity-0 scale-95 translate-y-4"
+              enterTo="opacity-100 scale-100 translate-y-0"
+              leave="ease-in duration-200"
+              leaveFrom="opacity-100 scale-100 translate-y-0"
+              leaveTo="opacity-0 scale-95 translate-y-4"
+            >
+              <Dialog.Panel className="bg-white rounded-2xl shadow-2xl w-full max-w-xl p-8 relative">
+                <div className="flex justify-between items-center border-b pb-4 mb-6">
+                  <Dialog.Title className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                    {editingId ? "Edit Attendance" : "Mark Attendance"}
+                  </Dialog.Title>
+                  <button
+                    onClick={() => setOpen(false)}
+                    className="p-2 rounded-full hover:bg-gray-100 transition"
+                  >
+                    <X size={22} className="text-gray-500" />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  {isAdminOrManager && (
+                    <div className="flex flex-col">
+                      <label className="text-gray-600 mb-1 font-medium">
+                        Employee
+                      </label>
+                      <select
+                        value={employeeId}
+                        onChange={(e) => setEmployeeId(e.target.value)}
+                        className="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+                      >
+                        <option value="">Select Employee</option>
+                        {employees.map((emp) => (
+                          <option key={emp._id} value={emp._id}>
+                            {emp.first_name} {emp.last_name} (
+                            {emp.employee_code})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  <div className="flex flex-col">
+                    <label className="text-gray-600 mb-1 font-medium">
+                      Status
+                    </label>
+                    <select
+                      value={status}
+                      onChange={(e) => setStatus(e.target.value)}
+                      className="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+                    >
+                      <option value="Present">Present</option>
+                      <option value="Remote">Remote</option>
+                      <option value="On Leave">On Leave</option>
+                    </select>
+                  </div>
+
+                  <div className="flex flex-col">
+                    <label className="text-gray-600 mb-1 font-medium">
+                      In Time
+                    </label>
+                    <input
+                      type="time"
+                      value={inTime}
+                      onChange={(e) => setInTime(e.target.value)}
+                      className="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+                    />
+                  </div>
+
+                  <div className="flex flex-col">
+                    <label className="text-gray-600 mb-1 font-medium">
+                      Out Time
+                    </label>
+                    <input
+                      type="time"
+                      value={outTime}
+                      onChange={(e) => setOutTime(e.target.value)}
+                      className="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+                    />
+                  </div>
+                </div>
+
+                {message && <p className="text-red-500 mt-3">{message}</p>}
+
+                <div className="flex justify-end mt-6 gap-3">
+                  <button
+                    onClick={() => setOpen(false)}
+                    className="px-5 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSubmit}
+                    disabled={loading}
+                    className="px-5 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 shadow-lg transition transform hover:scale-105"
+                  >
+                    {loading
+                      ? "Processing..."
+                      : editingId
+                      ? "Update"
+                      : "Mark Attendance"}
+                  </button>
+                </div>
+              </Dialog.Panel>
+            </Transition.Child>
+          </div>
+        </Dialog>
+      </Transition>
     </div>
   );
 }
